@@ -1,0 +1,3 @@
+{% extends "expenses/base.html" %}
+{% block title %}Register | Expense Award{% endblock %}
+{% block content %}<div class="auth-card"><div class="brand auth-brand">◉ EXPENSE <span>AWARD</span></div><h1>Create your account</h1><p class="muted">Start tracking your personal expenses.</p><form method="post" class="expense-form">{% csrf_token %}{{ form.as_p }}<button class="button full-button" type="submit">Register</button></form><p class="auth-footer">Already registered? <a href="{% url 'login' %}">Login</a></p></div>{% endblock %}

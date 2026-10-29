@@ -1,0 +1,46 @@
+{% extends "expenses/base.html" %}
+{% block title %}Dashboard | Expense Award{% endblock %}
+{% block content %}
+<header class="topbar">
+  <div><span class="eyebrow">PERSONAL FINANCE</span><h1>{{ today|date:"F Y" }}</h1><p class="muted">Here is your spending overview.</p></div>
+  <a class="button" href="{% url 'add_expense' %}">＋ Add expense</a>
+</header>
+
+<section class="summary-grid">
+  <article class="summary-card"><div class="card-heading">Expenses <span class="mini-icon coral">₹</span></div><p class="amount">₹{{ total|floatformat:2 }}</p><a href="#expense-list">See all expenses ↗</a></article>
+  <article class="summary-card" id="budget"><div class="card-heading">Monthly budget <span class="mini-icon blue">▤</span></div><p class="amount">₹{{ budget|floatformat:2 }}</p><form method="post" class="budget-inline">{% csrf_token %}<input type="hidden" name="action" value="set_budget"><input aria-label="Monthly budget amount" name="budget_amount" type="number" min="0.01" step="0.01" placeholder="Set monthly budget" required><button type="submit">Save</button></form></article>
+  <article class="summary-card"><div class="card-heading">Remaining budget <span class="mini-icon teal">↓</span></div><p class="amount {% if remaining < 0 %}negative{% else %}positive{% endif %}">₹{{ remaining|floatformat:2 }}</p><span class="muted small">Budget minus expenses</span></article>
+</section>
+
+<section class="dashboard-grid" id="analytics">
+  <article class="panel trend-panel">
+    <div class="panel-header"><div><h2>Monthly trend</h2><p class="muted small">Spending by month in {{ today|date:"Y" }}</p></div><span class="legend-dot">● Expenses</span></div>
+    <div class="chart-wrap"><canvas id="monthlyChart"></canvas></div>
+  </article>
+  <article class="panel category-panel">
+    <div class="panel-header"><div><h2>Category spend</h2><p class="muted small">This month</p></div></div>
+    {% if category_totals %}<div class="donut-wrap"><canvas id="categoryChart"></canvas></div>
+    {% else %}<div class="empty-chart">Add expenses to see your category breakdown.</div>{% endif %}
+    <div class="category-legend">
+      {% for item in category_totals %}<div><span>{{ item.category }}</span><strong>₹{{ item.total|floatformat:2 }}</strong></div>{% empty %}<div class="muted">No categories yet</div>{% endfor %}
+    </div>
+  </article>
+</section>
+
+<section class="dashboard-grid lower-grid">
+  <article class="panel table-panel" id="expense-list">
+    <div class="panel-header"><div><h2>Expense history</h2><p class="muted small">{{ expense_count }} expenses this month</p></div><a href="{% url 'add_expense' %}">＋ Add new</a></div>
+    <div class="table-scroll"><table><thead><tr><th>Expense</th><th>Category</th><th>Date</th><th>Amount</th><th></th></tr></thead><tbody>
+    {% for expense in recent_expenses %}
+      <tr><td><strong>{{ expense.title }}</strong>{% if expense.notes %}<small>{{ expense.notes|truncatechars:35 }}</small>{% endif %}</td><td><span class="category-pill">{{ expense.category }}</span></td><td>{{ expense.date|date:"d M Y" }}</td><td class="money">₹{{ expense.amount|floatformat:2 }}</td><td><form method="post" action="{% url 'delete_expense' expense.id %}">{% csrf_token %}<button class="delete-button" title="Delete expense" type="submit" onclick="return confirm('Delete this expense?')">×</button></form></td></tr>
+    {% empty %}<tr><td colspan="5" class="empty-row">No expenses this month yet. <a href="{% url 'add_expense' %}">Add your first expense</a>.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </article>
+  <article class="panel largest-panel"><div class="panel-header"><div><h2>Largest expenses</h2><p class="muted small">Recent transactions</p></div></div>
+    {% for expense in recent_expenses|slice:":3" %}<div class="largest-item"><div class="expense-symbol">₹</div><div class="largest-details"><strong>{{ expense.title }}</strong><span>{{ expense.category }} · {{ expense.date|date:"d M Y" }}</span></div><strong class="money">₹{{ expense.amount|floatformat:2 }}</strong></div>
+    {% empty %}<p class="muted small">Your recent expenses will appear here.</p>{% endfor %}
+  </article>
+</section>
+{{ monthly_totals|json_script:"monthly-data" }}
+{{ category_totals|json_script:"category-data" }}
+{% endblock %}
